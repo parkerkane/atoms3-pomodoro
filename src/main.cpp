@@ -57,7 +57,7 @@ void displayClearTime()
     display->fillRect(64 - 6, 64 - 5, 14, 10, BG_COLOR);
 }
 
-void clearScreen()
+void displayClearScreen()
 {
     display->fillScreen(BG_COLOR);
 
@@ -102,8 +102,6 @@ void displayDrawCycleIndicators()
     display->fillCircle(8, 128 - 8, 16, cycleCount >= 3 ? REMINDER_DOT_COLOR : BG_COLOR);
     display->fillCircle(128 - 8, 128 - 8, 16, cycleCount >= 4 ? REMINDER_DOT_COLOR : BG_COLOR);
 }
-
-/*************************************************************************************************/
 
 void displayNotify()
 {
@@ -184,7 +182,7 @@ void setup()
     display->begin(27000000);
     display->setRotation(0);
 
-    clearScreen();
+    displayClearScreen();
 
     startTimeMs = millis();
 }
