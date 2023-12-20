@@ -32,6 +32,8 @@ unsigned long startTimeMs = 0;
 unsigned long lastLeftTimeS = 0;
 unsigned long currentTimeMs;
 
+/*************************************************************************************************/
+
 void ARDUINO_ISR_ATTR buttonInt()
 {
     // Reset Time
@@ -43,20 +45,34 @@ void ARDUINO_ISR_ATTR buttonInt()
     }
 }
 
+/*************************************************************************************************/
+
+void displayDrawFullClock()
+{
+    display->fillArc(64, 64, 48, 16, 0, 360, RED);
+}
+
+void displayClearTime()
+{
+    display->fillRect(64 - 6, 64 - 5, 14, 10, BG_COLOR);
+}
+
 void clearScreen()
 {
     display->fillScreen(BG_COLOR);
-    display->setRotation(0);
 
-    display->fillArc(64, 63, 48, 16, 0, 360, PINK);
+    display->drawCircle(64, 63, 16, PINK);
+    display->drawCircle(64, 63, 48, PINK);
+
+    displayDrawFullClock();
 }
 
-void drawTime()
+void displayDrawTime()
 {
     unsigned long leftTimeS = (TIMER_LENGHT_MS - currentTimeMs) / mS_TO_S_FACTOR;
 
     if (lastLeftTimeS != leftTimeS) {
-        printf("Minutes left: %u.%02u\r\n", leftTimeS / 60, leftTimeS % 60);
+        printf("Time left: %u.%02u\r\n", leftTimeS / 60, leftTimeS % 60);
 
         char strbuf[64];
         snprintf(strbuf, 64, "%02u", (leftTimeS / 60) + 1);
@@ -70,23 +86,16 @@ void drawTime()
     lastLeftTimeS = leftTimeS;
 }
 
-void drawClock()
+void displayDrawClock()
 {
-    cycleState = false;
+    unsigned long progressingArcPos = 360 - (int(float(currentTimeMs) * 360 / TIMER_LENGHT_MS) % 360);
+    int timeRotatingArcPos = ARC_CENTER_POS + ((currentTimeMs * 6 / mS_TO_S_FACTOR) % 360);
 
-    unsigned long arcPos = 360 - (int(float(currentTimeMs) * 360 / TIMER_LENGHT_MS) % 360);
-    int arcStartPos = ARC_CENTER_POS + ((currentTimeMs * 6 / mS_TO_S_FACTOR) % 360);
-
-    if (blinkState == true) {
-        analogWrite(DISPLAY_BL_PIN, TFT_LOW);
-        blinkState = false;
-    }
-
-    display->fillArc(64, 64, 48, 16, arcStartPos, arcPos + arcStartPos, RED);
-    display->fillArc(64, 64, 48, 16, arcPos + arcStartPos, 360 + arcStartPos, RGB565(64, 0, 0));
+    display->fillArc(64, 64, 48, 16, timeRotatingArcPos, progressingArcPos + timeRotatingArcPos, RED);
+    display->fillArc(64, 64, 48, 16, progressingArcPos + timeRotatingArcPos, 360 + timeRotatingArcPos, RGB565(64, 0, 0));
 }
 
-void drawCycleIndicators()
+void displayDrawCycleIndicators()
 {
     display->fillCircle(8, 8, 16, cycleCount >= 1 ? REMINDER_DOT_COLOR : BG_COLOR);
     display->fillCircle(128 - 8, 8, 16, cycleCount >= 2 ? REMINDER_DOT_COLOR : BG_COLOR);
@@ -94,16 +103,11 @@ void drawCycleIndicators()
     display->fillCircle(128 - 8, 128 - 8, 16, cycleCount >= 4 ? REMINDER_DOT_COLOR : BG_COLOR);
 }
 
-void drawFullClock()
-{
-    display->fillArc(64, 64, 48, 16, 0, 360, RED);
-
-    display->fillRect(64 - 6, 64 - 5, 14, 10, BG_COLOR);
-}
+/*************************************************************************************************/
 
 void displayNotify()
 {
-    int blinkPos = (currentTimeMs * 10 / mS_TO_S_FACTOR) % (10 * 2);
+    int blinkPos = (currentTimeMs * 10 / mS_TO_S_FACTOR) % (10 * 2); // Every 2s
 
     if (blinkPos == 0 && blinkState == false) {
         printf("Blink.\r\n");
@@ -116,9 +120,19 @@ void displayNotify()
     }
 }
 
+void displayResetBacklight()
+{
+    if (blinkState == true) {
+        analogWrite(DISPLAY_BL_PIN, TFT_LOW);
+        blinkState = false;
+    }
+}
+
+/*************************************************************************************************/
+
 void soundNotify()
 {
-    int soundPos = (currentTimeMs * 10 / mS_TO_S_FACTOR) % (10 * 60);
+    int soundPos = (currentTimeMs * 10 / mS_TO_S_FACTOR) % (10 * 60); // Every 60s
 
     if (soundPos == 0 && soundState == false) {
         printf("Buzz.\r\n");
@@ -132,6 +146,8 @@ void soundNotify()
         soundState = false;
     }
 }
+
+/*************************************************************************************************/
 
 void shutdownDevice()
 {
@@ -149,6 +165,10 @@ void updateCycleCount()
     }
 }
 
+void resetCycleState()
+{
+    cycleState = false;
+}
 /*************************************************************************************************/
 
 void setup()
@@ -162,31 +182,39 @@ void setup()
     analogWrite(DISPLAY_BL_PIN, TFT_LOW);
 
     display->begin(27000000);
+    display->setRotation(0);
+
     clearScreen();
 
     startTimeMs = millis();
 }
-
 
 void loop()
 {
     currentTimeMs = millis() - startTimeMs;
 
     if (currentTimeMs < TIMER_LENGHT_MS) {
-        drawTime();
-        drawClock();
-        drawCycleIndicators();
+        displayResetBacklight();
+        displayDrawTime();
+        displayDrawClock();
+        displayDrawCycleIndicators();
 
-        delay(100);
+        resetCycleState();
+
+        delay(1000);
+
     } else if (currentTimeMs < SHUTDOWN_TIME_MS) {
-        drawFullClock();
-        drawCycleIndicators();
+        displayDrawFullClock();
+        displayDrawCycleIndicators();
+        displayClearTime();
 
         updateCycleCount();
+
         displayNotify();
         soundNotify();
 
         delay(25);
+
     } else {
         shutdownDevice();
     }
