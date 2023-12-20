@@ -10,7 +10,7 @@
 
 #define ARC_CENTER_POS (+270)
 
-#define TFT_LOW 0xCC
+#define TFT_LOW 0xDD
 #define TFT_HIGH 0xFF
 
 #define BG_COLOR RGB565(32, 0, 0)
@@ -189,6 +189,7 @@ void setup()
     display->setRotation(0);
 
     displayClearScreen();
+    soundNotify();
 
     startTimeMs = millis();
 }
