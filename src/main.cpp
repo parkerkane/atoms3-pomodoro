@@ -1,5 +1,6 @@
-#include <U8g2lib.h>
+#include "Arduino.h"
 #include <Arduino_GFX_Library.h>
+#include <U8g2lib.h>
 
 #define uS_TO_S_FACTOR 1000000ULL
 #define mS_TO_S_FACTOR 1000ULL
@@ -167,6 +168,12 @@ void resetCycleState()
 {
     cycleState = false;
 }
+
+void updateCurrentTime()
+{
+    currentTimeMs = millis() - startTimeMs;
+}
+
 /*************************************************************************************************/
 
 void setup()
@@ -189,7 +196,7 @@ void setup()
 
 void loop()
 {
-    currentTimeMs = millis() - startTimeMs;
+    updateCurrentTime();
 
     if (currentTimeMs < TIMER_LENGHT_MS) {
         displayResetBacklight();
