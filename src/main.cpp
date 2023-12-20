@@ -1,6 +1,5 @@
-#include "Arduino.h"
-#include <Arduino_GFX_Library.h>
 #include <U8g2lib.h>
+#include <Arduino_GFX_Library.h>
 
 #define uS_TO_S_FACTOR 1000000ULL
 #define mS_TO_S_FACTOR 1000ULL
@@ -73,7 +72,7 @@ void displayDrawTime()
     unsigned long leftTimeS = (TIMER_LENGHT_MS - currentTimeMs) / mS_TO_S_FACTOR;
 
     if (lastLeftTimeS != leftTimeS) {
-        printf("Time left: %u.%02u\r\n", leftTimeS / 60, leftTimeS % 60);
+        printf("Time left: %u:%02u\r\n", leftTimeS / 60, leftTimeS % 60);
 
         char strbuf[64];
         snprintf(strbuf, 64, "%02u", (leftTimeS / 60) + 1);
@@ -158,9 +157,9 @@ void shutdownDevice()
 void updateCycleCount()
 {
     if (cycleState == false) {
-        printf("Update resetCount\r\n");
         cycleState = true;
         cycleCount++;
+        printf("Updated cycle count: %i\r\n", cycleCount);
     }
 }
 
