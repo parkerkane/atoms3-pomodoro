@@ -88,6 +88,11 @@ void soundNotifyLong()
     tone(BUZZ_PIN, 220, 25);
 }
 
+void soundNotifyMute()
+{
+    tone(BUZZ_PIN, 1000, 50);
+}
+
 void soundNotifyShutdown()
 {
     tone(BUZZ_PIN, 1000, 25);
@@ -210,9 +215,12 @@ void loop_main()
 
     case STATE_SLEEP:
         setCpuFrequencyMhz(240);
+
         cycleCount = 0;
         startTimeMs = millis();
         displayClearScreen();
+        soundNotifyShutdown();
+
         setCpuFrequencyMhz(10);
 
         state = STATE_SLEEP_RUN;
@@ -234,9 +242,23 @@ void loop_main()
     }
 }
 
+/*************************************************************************************************/
+
 void handleButtonClick()
 {
     switch (state) {
+    case STATE_TIMER:
+    case STATE_TIMER_RUN:
+        // Dont do anything
+        break;
+
+    case STATE_NOTIFY:
+    case STATE_NOTIFY_RUN:
+    case STATE_SLEEP:
+    case STATE_SLEEP_RUN:
+        state = STATE_INIT;
+        break;
+
     default:
         state = STATE_INIT;
     }
@@ -247,8 +269,12 @@ void handleButtonLongClick()
     switch (state) {
     case STATE_NOTIFY:
     case STATE_NOTIFY_RUN:
-        soundNotifyLong();
-        soundMuted = true;
+        if (soundMuted == false) {
+            soundNotifyMute();
+            soundMuted = true;
+        } else {
+            state = STATE_SLEEP;
+        }
         break;
 
     default:
@@ -287,7 +313,7 @@ void loop_button()
         break;
 
     case BUTTON_DOWN_LONG:
-        soundNotifyShutdown();
+        soundNotifyLong();
         buttonState = BUTTON_DOWN_LONG_RUN;
 
     case BUTTON_DOWN_LONG_RUN:
@@ -303,6 +329,8 @@ void loop_button()
         buttonState = BUTTON_UP;
     }
 }
+
+/*************************************************************************************************/
 
 void loop()
 {
