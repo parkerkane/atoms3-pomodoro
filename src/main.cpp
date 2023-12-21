@@ -128,7 +128,6 @@ void ARDUINO_ISR_ATTR buttonClickDown()
 
 void setup()
 {
-    // setCpuFrequencyMhz(40);
     printf("Hello world!\n\r");
 
     pinMode(BUTTON_PIN, INPUT_PULLUP);
