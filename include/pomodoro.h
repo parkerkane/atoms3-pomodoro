@@ -28,8 +28,6 @@
 
 void displaySetup();
 
-void displayClearScreen();
-
 void displaySetBacklight(int val);
 void displayDrawFullClock();
 void displayClearTime();
