@@ -11,10 +11,22 @@ enum State {
     STATE_SLEEP,
     STATE_SLEEP_RUN,
     STATE_SETUP,
+    STATE_SETUP_RUN,
     STATE_BUTTON,
+    STATE_BUTTON_RUN,
 };
 
-volatile State state;
+enum ButtonState {
+    BUTTON_UP,
+    BUTTON_UP_RUN,
+    BUTTON_DOWN,
+    BUTTON_DOWN_RUN,
+    BUTTON_DOWN_LONG,
+    BUTTON_DOWN_LONG_RUN,
+};
+
+volatile State state = STATE_SLEEP;
+volatile ButtonState buttonState;
 
 /*************************************************************************************************/
 
@@ -56,11 +68,26 @@ void soundNotifyTimed()
     }
 }
 
+void soundNotifyShort()
+{
+    tone(BUZZ_PIN, 440, 5);
+}
+
 void soundNotifyLong()
 {
     tone(BUZZ_PIN, 440, 25);
     delay(100);
     tone(BUZZ_PIN, 220, 25);
+}
+
+void soundNotifyShutdown()
+{
+    tone(BUZZ_PIN, 1000, 25);
+    delay(125);
+    tone(BUZZ_PIN, 500, 50);
+    delay(250);
+    tone(BUZZ_PIN, 250, 100);
+    delay(250);
 }
 
 /*************************************************************************************************/
@@ -78,20 +105,10 @@ void updateCurrentTime()
 
 /*************************************************************************************************/
 
-volatile time_t buttonDownTimeMs = 0;
-volatile bool buttonDownState = false;
-
 void ARDUINO_ISR_ATTR buttonClickDown()
 {
-    buttonDownTimeMs = millis();
-    buttonDownState = true;
-}
-
-void ARDUINO_ISR_ATTR buttonClickUp()
-{
-    buttonDownState = false;
-
-    state = STATE_BUTTON;
+    // state = STATE_BUTTON;
+    buttonState = BUTTON_DOWN;
 }
 
 /*************************************************************************************************/
@@ -104,7 +121,6 @@ void setup()
     pinMode(BUTTON_PIN, INPUT_PULLUP);
 
     attachInterrupt(BUTTON_PIN, buttonClickDown, FALLING);
-    attachInterrupt(BUTTON_PIN, buttonClickUp, RISING);
 
     ledcChangeFrequency(analogGetChannel(DISPLAY_BL_PIN), 500, 8);
     analogWrite(DISPLAY_BL_PIN, TFT_LIGHT_LOW);
@@ -116,73 +132,31 @@ void setup()
 
 /*************************************************************************************************/
 
-void handleStateSleepRun()
+void loop_main()
 {
-    int lightPos = ((sin(currentTimeMs * 3.1415 / (5 * mS_TO_S_FACTOR)) + 1.0) / 2) * 0xCC;
+    float fval;
 
-    displaySetBacklight(lightPos);
-}
-
-void handleStateSleepInit()
-{
-    cycleCount = 0;
-    displayClearScreen();
-}
-
-void handleStateNotifyRun()
-{
-    displayNotifyTimed(currentTimeMs);
-    soundNotifyTimed();
-}
-
-void handleStateNotifyInit()
-{
-    updateCycleCount();
-
-    displayClearScreen();
-    displayDrawFullClock();
-    displayDrawCycleIndicators(cycleCount);
-    displayClearTime();
-}
-
-void handleStateTimerRun()
-{
-    displayDrawTime(currentTimeMs);
-    displayDrawClock(currentTimeMs);
-}
-
-void handleStateTimerInit()
-{
-    displayClearScreen();
-    displayResetBacklight();
-    displayDrawCycleIndicators(cycleCount);
-}
-
-void handleStateInit()
-{
-    startTimeMs = millis();
-
-    // Reset Cycle count back to zero
-    if (cycleCount >= 4) {
-        cycleCount = 0;
-    }
-}
-
-/*************************************************************************************************/
-
-void loop()
-{
     updateCurrentTime();
 
     switch (state) {
     case STATE_INIT:
-        handleStateInit();
+        startTimeMs = millis();
+
+        // Reset Cycle count back to zero
+        if (cycleCount >= 4) {
+            cycleCount = 0;
+        }
 
         state = STATE_TIMER;
         break;
 
     case STATE_TIMER:
-        handleStateTimerInit();
+        setCpuFrequencyMhz(40);
+        displayClearScreen();
+        displayResetBacklight();
+        displayDrawCycleIndicators(cycleCount);
+
+        soundNotifyShort();
 
         state = STATE_TIMER_RUN;
 
@@ -192,50 +166,124 @@ void loop()
             break;
         }
 
-        handleStateTimerRun();
+        displayDrawTime(currentTimeMs);
+        displayDrawClock(currentTimeMs);
 
-        delay(1000);
+        delay(100);
         break;
 
     case STATE_NOTIFY:
-        handleStateNotifyInit();
+        setCpuFrequencyMhz(240);
+
+        updateCycleCount();
+
+        displayClearScreen();
+        displayDrawFullClock();
+        displayDrawCycleIndicators(cycleCount);
+        displayClearTime();
+
+        setCpuFrequencyMhz(10);
 
         state = STATE_NOTIFY_RUN;
 
     case STATE_NOTIFY_RUN:
-        if (currentTimeMs > SHUTDOWN_TIME_MS) {
+        if (currentTimeMs - TIMER_LENGHT_MS > NOTIFY_TIMEOUT_MS) {
             state = STATE_SLEEP;
             break;
         }
 
-        handleStateNotifyRun();
+        displayNotifyTimed(currentTimeMs);
+        soundNotifyTimed();
 
         delay(25);
         break;
 
     case STATE_SLEEP:
-        handleStateSleepInit();
+        setCpuFrequencyMhz(240);
+        cycleCount = 0;
+        startTimeMs = millis();
+        displayClearScreen();
+        setCpuFrequencyMhz(10);
 
         state = STATE_SLEEP_RUN;
 
     case STATE_SLEEP_RUN:
-
-        handleStateSleepRun();
+        fval = powf((cosf(currentTimeMs * 3.1415 / (15 * mS_TO_S_FACTOR)) + 1.0) / 2, 4.0);
+        if (fval < 0.7) {
+            fval = 0;
+        }
+        displaySetBacklight(fval * TFT_LIGHT_LOW);
 
         delay(50);
 
-        break;
-
-    case STATE_SETUP:
-        state = STATE_INIT;
-        break;
-
-    case STATE_BUTTON:
-        state = STATE_INIT;
         break;
 
     default:
         state = STATE_INIT;
         break;
     }
+}
+
+void handleButtonClick()
+{
+    state = STATE_INIT;
+}
+
+void handleButtonLongClick()
+{
+    state = STATE_SLEEP;
+}
+
+void loop_button()
+{
+    static time_t buttonDownTime;
+
+    switch (buttonState) {
+
+    case BUTTON_UP:
+        buttonDownTime = 0;
+        buttonState = BUTTON_UP_RUN;
+
+    case BUTTON_UP_RUN:
+        break;
+
+    case BUTTON_DOWN:
+        buttonDownTime = millis();
+        soundNotifyShort();
+
+        buttonState = BUTTON_DOWN_RUN;
+
+    case BUTTON_DOWN_RUN:
+        if (digitalRead(BUTTON_PIN) == HIGH) {
+            handleButtonClick();
+
+            buttonState = BUTTON_UP;
+        } else if (millis() - buttonDownTime > 1000) {
+            buttonState = BUTTON_DOWN_LONG;
+        }
+
+        break;
+
+    case BUTTON_DOWN_LONG:
+        soundNotifyShutdown();
+        buttonState = BUTTON_DOWN_LONG_RUN;
+
+    case BUTTON_DOWN_LONG_RUN:
+        if (digitalRead(BUTTON_PIN) == HIGH) {
+            handleButtonLongClick();
+
+            buttonState = BUTTON_UP;
+        }
+
+        break;
+
+    default:
+        buttonState = BUTTON_UP;
+    }
+}
+
+void loop()
+{
+    loop_button();
+    loop_main();
 }

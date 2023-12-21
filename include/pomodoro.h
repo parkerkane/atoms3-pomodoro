@@ -18,7 +18,8 @@
 #define REMINDER_DOT_COLOR RGB565(255 / 2, 130 / 2, 198 / 2)
 
 #define TIMER_LENGHT_MS (25 * 60 * mS_TO_S_FACTOR)
-#define SHUTDOWN_TIME_MS (45 * 60 * mS_TO_S_FACTOR)
+#define NOTIFY_TIMEOUT_MS (30 * 60 * mS_TO_S_FACTOR)
+// #define SHUTDOWN_TIME_MS (45 * 60 * mS_TO_S_FACTOR)
 
 long getCurrentTime();
 
