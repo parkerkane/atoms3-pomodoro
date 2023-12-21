@@ -162,7 +162,7 @@ void loop_main()
             state = STATE_TIMER_RUN;
 
         case STATE_TIMER_RUN:
-            if (currentTimeMs > TIMER_LENGHT_MS) {
+            if (currentTimeMs > TIMER_LENGTH_MS) {
                 state = STATE_NOTIFY;
                 break;
             }
@@ -188,7 +188,7 @@ void loop_main()
             state = STATE_NOTIFY_RUN;
 
         case STATE_NOTIFY_RUN:
-            if (currentTimeMs - TIMER_LENGHT_MS > NOTIFY_TIMEOUT_MS) {
+            if (currentTimeMs - TIMER_LENGTH_MS > NOTIFY_TIMEOUT_MS) {
                 state = STATE_SLEEP;
                 break;
             }
@@ -207,7 +207,7 @@ void loop_main()
             displayClearScreen();
             soundNotifyShutdown();
 
-            setCpuFrequencyMhz(10);
+            setCpuFrequencyMhz(20);
 
             state = STATE_SLEEP_RUN;
 

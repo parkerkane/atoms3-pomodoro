@@ -55,7 +55,7 @@ void displayDrawTime(unsigned long currentTimeMs)
 {
     static unsigned long lastLeftTimeS = 0;
 
-    unsigned long leftTimeS = (TIMER_LENGHT_MS - currentTimeMs) / mS_TO_S_FACTOR;
+    unsigned long leftTimeS = (TIMER_LENGTH_MS - currentTimeMs) / mS_TO_S_FACTOR;
 
     if (lastLeftTimeS != leftTimeS) {
         printf("Time left: %lu:%02lu\r\n", leftTimeS / 60, leftTimeS % 60);
@@ -74,7 +74,7 @@ void displayDrawTime(unsigned long currentTimeMs)
 
 void displayDrawClock(unsigned long currentTimeMs)
 {
-    float progressingArcPos = 360.0f - (float) ((currentTimeMs * 360 / TIMER_LENGHT_MS) % 360);
+    float progressingArcPos = 360.0f - (float) ((currentTimeMs * 360 / TIMER_LENGTH_MS) % 360);
     float timeRotatingArcPos = ARC_CENTER_POS + ((currentTimeMs * 6 / mS_TO_S_FACTOR) % 360);
 
     display->fillArc(
