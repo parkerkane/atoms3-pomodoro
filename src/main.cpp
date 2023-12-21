@@ -1,134 +1,45 @@
-#include <U8g2lib.h>
-#include <Arduino_GFX_Library.h>
+#include "pomodoro.h"
 
-#define uS_TO_S_FACTOR 1000000ULL
-#define mS_TO_S_FACTOR 1000ULL
+/*************************************************************************************************/
 
-#define DISPLAY_BL_PIN 16
-#define BUTTON_PIN 41
-#define BUZZ_PIN 38
+enum State {
+    STATE_INIT,
+    STATE_TIMER,
+    STATE_TIMER_RUN,
+    STATE_NOTIFY,
+    STATE_NOTIFY_RUN,
+    STATE_SLEEP,
+    STATE_SLEEP_RUN,
+    STATE_SETUP,
+    STATE_BUTTON,
+};
 
-#define ARC_CENTER_POS (+270)
+volatile State state;
 
-#define TFT_LOW 0xDD
-#define TFT_HIGH 0xFF
+/*************************************************************************************************/
 
-#define BG_COLOR RGB565(32, 0, 0)
-#define REMINDER_DOT_COLOR RGB565(255 / 2, 130 / 2, 198 / 2)
+volatile int cycleCount = 0;
+volatile time_t startTimeMs = 0;
 
-#define TIMER_LENGHT_MS (25 * 60 * mS_TO_S_FACTOR)
-#define SHUTDOWN_TIME_MS (45 * 60 * mS_TO_S_FACTOR)
-
-Arduino_DataBus* displayBus = new Arduino_ESP32SPI(33 /* DC */, 15 /* CS */, 17 /* SCK */, 21 /* MOSI */, GFX_NOT_DEFINED /* MISO */);
-Arduino_GFX* display = new Arduino_GC9107(displayBus, 34 /* RST */, 0 /* rotation */, true /* IPS */);
-
-int cycleCount = 0;
-
-bool blinkState = false;
 bool soundState = false;
-bool cycleState = false;
 
-unsigned long startTimeMs = 0;
-unsigned long lastLeftTimeS = 0;
-unsigned long currentTimeMs;
+time_t currentTimeMs;
 
 /*************************************************************************************************/
 
-void ARDUINO_ISR_ATTR buttonInt()
+int getCycleCount()
 {
-    // Reset Time
-    startTimeMs = millis();
+    return cycleCount;
+}
 
-    // Reset Cycle count back to zero
-    if (cycleCount >= 4) {
-        cycleCount = 0;
-    }
+time_t getCurrentTime()
+{
+    return currentTimeMs;
 }
 
 /*************************************************************************************************/
 
-void displayDrawFullClock()
-{
-    display->fillArc(64, 64, 48, 16, 0, 360, RED);
-}
-
-void displayClearTime()
-{
-    display->fillRect(64 - 6, 64 - 5, 14, 10, BG_COLOR);
-}
-
-void displayClearScreen()
-{
-    display->fillScreen(BG_COLOR);
-
-    display->drawCircle(64, 63, 16, PINK);
-    display->drawCircle(64, 63, 48, PINK);
-
-    displayDrawFullClock();
-}
-
-void displayDrawTime()
-{
-    unsigned long leftTimeS = (TIMER_LENGHT_MS - currentTimeMs) / mS_TO_S_FACTOR;
-
-    if (lastLeftTimeS != leftTimeS) {
-        printf("Time left: %u:%02u\r\n", leftTimeS / 60, leftTimeS % 60);
-
-        char strbuf[64];
-        snprintf(strbuf, 64, "%02u", (leftTimeS / 60) + 1);
-
-        display->setCursor(64 - 6, 64 + 5);
-        display->setFont(u8g2_font_7x14_mr);
-        display->fillRect(64 - 6, 64 - 5, 14, 10, BG_COLOR);
-        display->setTextColor(WHITE);
-        display->println(strbuf);
-    }
-    lastLeftTimeS = leftTimeS;
-}
-
-void displayDrawClock()
-{
-    unsigned long progressingArcPos = 360 - (int(float(currentTimeMs) * 360 / TIMER_LENGHT_MS) % 360);
-    int timeRotatingArcPos = ARC_CENTER_POS + ((currentTimeMs * 6 / mS_TO_S_FACTOR) % 360);
-
-    display->fillArc(64, 64, 48, 16, timeRotatingArcPos, progressingArcPos + timeRotatingArcPos, RED);
-    display->fillArc(64, 64, 48, 16, progressingArcPos + timeRotatingArcPos, 360 + timeRotatingArcPos, RGB565(64, 0, 0));
-}
-
-void displayDrawCycleIndicators()
-{
-    display->fillCircle(8, 8, 16, cycleCount >= 1 ? REMINDER_DOT_COLOR : BG_COLOR);
-    display->fillCircle(128 - 8, 8, 16, cycleCount >= 2 ? REMINDER_DOT_COLOR : BG_COLOR);
-    display->fillCircle(8, 128 - 8, 16, cycleCount >= 3 ? REMINDER_DOT_COLOR : BG_COLOR);
-    display->fillCircle(128 - 8, 128 - 8, 16, cycleCount >= 4 ? REMINDER_DOT_COLOR : BG_COLOR);
-}
-
-void displayNotify()
-{
-    int blinkPos = (currentTimeMs * 10 / mS_TO_S_FACTOR) % (10 * 2); // Every 2s
-
-    if (blinkPos == 0 && blinkState == false) {
-        printf("Blink.\r\n");
-
-        analogWrite(DISPLAY_BL_PIN, TFT_HIGH);
-        blinkState = true;
-    } else if (blinkPos != 0 && blinkState == true) {
-        analogWrite(DISPLAY_BL_PIN, TFT_LOW);
-        blinkState = false;
-    }
-}
-
-void displayResetBacklight()
-{
-    if (blinkState == true) {
-        analogWrite(DISPLAY_BL_PIN, TFT_LOW);
-        blinkState = false;
-    }
-}
-
-/*************************************************************************************************/
-
-void soundNotify()
+void soundNotifyTimed()
 {
     int soundPos = (currentTimeMs * 10 / mS_TO_S_FACTOR) % (10 * 60); // Every 60s
 
@@ -145,27 +56,19 @@ void soundNotify()
     }
 }
 
-/*************************************************************************************************/
-
-void shutdownDevice()
+void soundNotifyLong()
 {
-    analogWrite(DISPLAY_BL_PIN, 0);
-    printf("Sleeping.\r\n");
-    esp_deep_sleep_start();
+    tone(BUZZ_PIN, 440, 25);
+    delay(100);
+    tone(BUZZ_PIN, 220, 25);
 }
+
+/*************************************************************************************************/
 
 void updateCycleCount()
 {
-    if (cycleState == false) {
-        cycleState = true;
-        cycleCount++;
-        printf("Updated cycle count: %i\r\n", cycleCount);
-    }
-}
-
-void resetCycleState()
-{
-    cycleState = false;
+    cycleCount++;
+    printf("Updated cycle count: %i\r\n", cycleCount);
 }
 
 void updateCurrentTime()
@@ -175,52 +78,164 @@ void updateCurrentTime()
 
 /*************************************************************************************************/
 
+volatile time_t buttonDownTimeMs = 0;
+volatile bool buttonDownState = false;
+
+void ARDUINO_ISR_ATTR buttonClickDown()
+{
+    buttonDownTimeMs = millis();
+    buttonDownState = true;
+}
+
+void ARDUINO_ISR_ATTR buttonClickUp()
+{
+    buttonDownState = false;
+
+    state = STATE_BUTTON;
+}
+
+/*************************************************************************************************/
+
 void setup()
 {
+    // setCpuFrequencyMhz(40);
     printf("Hello world!\n\r");
 
     pinMode(BUTTON_PIN, INPUT_PULLUP);
-    attachInterrupt(BUTTON_PIN, buttonInt, RISING);
+
+    attachInterrupt(BUTTON_PIN, buttonClickDown, FALLING);
+    attachInterrupt(BUTTON_PIN, buttonClickUp, RISING);
 
     ledcChangeFrequency(analogGetChannel(DISPLAY_BL_PIN), 500, 8);
-    analogWrite(DISPLAY_BL_PIN, TFT_LOW);
+    analogWrite(DISPLAY_BL_PIN, TFT_LIGHT_LOW);
 
-    display->begin(27000000);
-    display->setRotation(0);
+    displaySetup();
+    displayClearScreen();
+    soundNotifyLong();
+}
+
+/*************************************************************************************************/
+
+void handleStateSleepRun()
+{
+    int lightPos = ((sin(currentTimeMs * 3.1415 / (5 * mS_TO_S_FACTOR)) + 1.0) / 2) * 0xCC;
+
+    displaySetBacklight(lightPos);
+}
+
+void handleStateSleepInit()
+{
+    cycleCount = 0;
+    displayClearScreen();
+}
+
+void handleStateNotifyRun()
+{
+    displayNotifyTimed(currentTimeMs);
+    soundNotifyTimed();
+}
+
+void handleStateNotifyInit()
+{
+    updateCycleCount();
 
     displayClearScreen();
-    soundNotify();
-
-    startTimeMs = millis();
+    displayDrawFullClock();
+    displayDrawCycleIndicators(cycleCount);
+    displayClearTime();
 }
+
+void handleStateTimerRun()
+{
+    displayDrawTime(currentTimeMs);
+    displayDrawClock(currentTimeMs);
+}
+
+void handleStateTimerInit()
+{
+    displayClearScreen();
+    displayResetBacklight();
+    displayDrawCycleIndicators(cycleCount);
+}
+
+void handleStateInit()
+{
+    startTimeMs = millis();
+
+    // Reset Cycle count back to zero
+    if (cycleCount >= 4) {
+        cycleCount = 0;
+    }
+}
+
+/*************************************************************************************************/
 
 void loop()
 {
     updateCurrentTime();
 
-    if (currentTimeMs < TIMER_LENGHT_MS) {
-        displayResetBacklight();
-        displayDrawTime();
-        displayDrawClock();
-        displayDrawCycleIndicators();
+    switch (state) {
+    case STATE_INIT:
+        handleStateInit();
 
-        resetCycleState();
+        state = STATE_TIMER;
+        break;
+
+    case STATE_TIMER:
+        handleStateTimerInit();
+
+        state = STATE_TIMER_RUN;
+
+    case STATE_TIMER_RUN:
+        if (currentTimeMs > TIMER_LENGHT_MS) {
+            state = STATE_NOTIFY;
+            break;
+        }
+
+        handleStateTimerRun();
 
         delay(1000);
+        break;
 
-    } else if (currentTimeMs < SHUTDOWN_TIME_MS) {
-        displayDrawFullClock();
-        displayDrawCycleIndicators();
-        displayClearTime();
+    case STATE_NOTIFY:
+        handleStateNotifyInit();
 
-        updateCycleCount();
+        state = STATE_NOTIFY_RUN;
 
-        displayNotify();
-        soundNotify();
+    case STATE_NOTIFY_RUN:
+        if (currentTimeMs > SHUTDOWN_TIME_MS) {
+            state = STATE_SLEEP;
+            break;
+        }
+
+        handleStateNotifyRun();
 
         delay(25);
+        break;
 
-    } else {
-        shutdownDevice();
+    case STATE_SLEEP:
+        handleStateSleepInit();
+
+        state = STATE_SLEEP_RUN;
+
+    case STATE_SLEEP_RUN:
+
+        handleStateSleepRun();
+
+        delay(50);
+
+        break;
+
+    case STATE_SETUP:
+        state = STATE_INIT;
+        break;
+
+    case STATE_BUTTON:
+        state = STATE_INIT;
+        break;
+
+    default:
+        state = STATE_INIT;
+        break;
     }
 }
