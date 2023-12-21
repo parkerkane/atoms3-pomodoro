@@ -1,7 +1,17 @@
 #include "pomodoro.h"
 
-Arduino_DataBus* displayBus = new Arduino_ESP32SPI(33 /* DC */, 15 /* CS */, 17 /* SCK */, 21 /* MOSI */, GFX_NOT_DEFINED /* MISO */);
-Arduino_GFX* display = new Arduino_GC9107(displayBus, 34 /* RST */, 0 /* rotation */, true /* IPS */);
+Arduino_DataBus *displayBus = new Arduino_ESP32SPI(
+        33 /* DC */,
+        15 /* CS */,
+        17 /* SCK */,
+        21 /* MOSI */,
+        GFX_NOT_DEFINED /* MISO */);
+
+Arduino_GFX *display = new Arduino_GC9107(
+        displayBus,
+        34 /* RST */,
+        0 /* rotation */,
+        true /* IPS */);
 
 void displaySetup()
 {
@@ -45,30 +55,41 @@ void displayDrawTime(unsigned long currentTimeMs)
 {
     static unsigned long lastLeftTimeS = 0;
 
-    long leftTimeS = (TIMER_LENGHT_MS - currentTimeMs) / mS_TO_S_FACTOR;
+    unsigned long leftTimeS = (TIMER_LENGHT_MS - currentTimeMs) / mS_TO_S_FACTOR;
 
     if (lastLeftTimeS != leftTimeS) {
-        printf("Time left: %i:%02i\r\n", leftTimeS / 60, leftTimeS % 60);
+        printf("Time left: %lu:%02lu\r\n", leftTimeS / 60, leftTimeS % 60);
 
-        char strbuf[64];
-        snprintf(strbuf, 64, "%02u", (leftTimeS / 60) + 1);
+        char stringBuffer[64];
+        snprintf(stringBuffer, 64, "%02lu", (leftTimeS / 60) + 1);
 
         display->setCursor(64 - 6, 64 + 5);
         display->setFont(u8g2_font_7x14_mr);
         display->fillRect(64 - 6, 64 - 5, 14, 10, BG_COLOR);
         display->setTextColor(WHITE);
-        display->println(strbuf);
+        display->println(stringBuffer);
     }
     lastLeftTimeS = leftTimeS;
 }
 
 void displayDrawClock(unsigned long currentTimeMs)
 {
-    unsigned long progressingArcPos = 360 - (int(float(currentTimeMs) * 360 / TIMER_LENGHT_MS) % 360);
-    int timeRotatingArcPos = ARC_CENTER_POS + ((currentTimeMs * 6 / mS_TO_S_FACTOR) % 360);
+    float progressingArcPos = 360.0f - (float) ((currentTimeMs * 360 / TIMER_LENGHT_MS) % 360);
+    float timeRotatingArcPos = ARC_CENTER_POS + ((currentTimeMs * 6 / mS_TO_S_FACTOR) % 360);
 
-    display->fillArc(64, 64, 48, 16, timeRotatingArcPos, progressingArcPos + timeRotatingArcPos, RED);
-    display->fillArc(64, 64, 48, 16, progressingArcPos + timeRotatingArcPos, 360 + timeRotatingArcPos, RGB565(64, 0, 0));
+    display->fillArc(
+            64, 64,
+            48, 16,
+            timeRotatingArcPos,
+            progressingArcPos + timeRotatingArcPos,
+            RED);
+
+    display->fillArc(
+            64, 64,
+            48, 16,
+            progressingArcPos + timeRotatingArcPos,
+            360 + timeRotatingArcPos,
+            RGB565(64, 0, 0));
 }
 
 void displayDrawCycleIndicators(int cycleCount)
@@ -83,15 +104,17 @@ void displayNotifyTimed(unsigned long currentTimeMs)
 {
     static bool blinkState = false;
 
-    int blinkPos = (currentTimeMs * 10 / mS_TO_S_FACTOR) % (10 * 2); // Every 2s
+    unsigned long blinkPos = (currentTimeMs * 10 / mS_TO_S_FACTOR) % (10 * 2); // Every 2s
 
-    if (blinkPos == 0 && blinkState == false) {
+    if (blinkPos == 0 && !blinkState) {
         printf("Blink.\r\n");
 
         displaySetBacklight(TFT_LIGHT_HIGH);
+
         blinkState = true;
-    } else if (blinkPos != 0 && blinkState == true) {
+    } else if (blinkPos != 0 && blinkState) {
         displaySetBacklight(TFT_LIGHT_LOW);
+
         blinkState = false;
     }
 }

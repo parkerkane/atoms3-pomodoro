@@ -26,8 +26,6 @@
 #endif
 // #define SHUTDOWN_TIME_MS (45 * 60 * mS_TO_S_FACTOR)
 
-long getCurrentTime();
-
 void displaySetup();
 
 void displayClearScreen();
