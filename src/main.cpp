@@ -25,7 +25,12 @@ enum ButtonState {
     BUTTON_DOWN_LONG_RUN,
 };
 
+#ifdef DEV
+volatile State state = STATE_INIT;
+#else
 volatile State state = STATE_SLEEP;
+#endif
+
 volatile ButtonState buttonState;
 
 /*************************************************************************************************/
@@ -33,7 +38,7 @@ volatile ButtonState buttonState;
 volatile int cycleCount = 0;
 volatile time_t startTimeMs = 0;
 
-bool soundState = false;
+bool soundMuted = false;
 
 time_t currentTimeMs;
 
@@ -53,18 +58,21 @@ time_t getCurrentTime()
 
 void soundNotifyTimed()
 {
-    int soundPos = (currentTimeMs * 10 / mS_TO_S_FACTOR) % (10 * 60); // Every 60s
+    if (soundMuted == true) {
+        return;
+    }
 
-    if (soundPos == 0 && soundState == false) {
+    static int oldPos = -1;
+    int soundPos = (currentTimeMs / 60 / mS_TO_S_FACTOR); // Every 60s
+
+    if (soundPos != oldPos) {
         printf("Buzz.\r\n");
 
         tone(BUZZ_PIN, 440, 5);
         delay(100);
         tone(BUZZ_PIN, 440, 5);
 
-        soundState = true;
-    } else if (soundPos != 0 && soundState == true) {
-        soundState = false;
+        oldPos = soundPos;
     }
 }
 
@@ -147,6 +155,8 @@ void loop_main()
             cycleCount = 0;
         }
 
+        soundMuted = false;
+
         state = STATE_TIMER;
         break;
 
@@ -226,12 +236,24 @@ void loop_main()
 
 void handleButtonClick()
 {
-    state = STATE_INIT;
+    switch (state) {
+    default:
+        state = STATE_INIT;
+    }
 }
 
 void handleButtonLongClick()
 {
-    state = STATE_SLEEP;
+    switch (state) {
+    case STATE_NOTIFY:
+    case STATE_NOTIFY_RUN:
+        soundNotifyLong();
+        soundMuted = true;
+        break;
+
+    default:
+        state = STATE_SLEEP;
+    }
 }
 
 void loop_button()
