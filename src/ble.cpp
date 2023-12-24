@@ -12,7 +12,7 @@
 #define HEARTHBEAT_CHAR_UUID "49a380be-0591-4bb0-978b-fab6cc055f3f"
 
 BLEServer* pServer = NULL;
-unsigned long lastHeartbeatTime = -15 * 60 * 1000;
+bool gotHearthbeat = false;
 
 class MyServerCallbacks : public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) override
@@ -31,7 +31,7 @@ class HearthbeatCallbacks : public BLECharacteristicCallbacks {
         std::string rxValue = pCharacteristic->getValue();
 
         printf("BLE Received: %s\r\n", rxValue.c_str());
-        lastHeartbeatTime = millis();
+        gotHearthbeat = true;
     }
 };
 
@@ -59,9 +59,12 @@ void bleSetup()
     BLEDevice::startAdvertising();
 }
 
-bool bleIsDesktopActive()
+void bleResetHearthbeat() 
 {
-    unsigned long now = millis();
+    gotHearthbeat = false;
+}
 
-    return now - lastHeartbeatTime < 1 * 5 * 1000;
+bool bleHasHerthbeat()
+{
+    return gotHearthbeat;
 }

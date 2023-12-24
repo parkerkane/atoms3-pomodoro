@@ -153,7 +153,6 @@ void loop_main()
         break;
 
     case STATE_TIMER:
-        //            setCpuFrequencyMhz(40);
         displayClearScreen();
         displayResetBacklight();
         displayDrawCycleIndicators(cycleCount);
@@ -175,16 +174,12 @@ void loop_main()
         break;
 
     case STATE_NOTIFY:
-        //            setCpuFrequencyMhz(240);
-
         updateCycleCount();
 
         displayClearScreen();
         displayDrawFullClock();
         displayDrawCycleIndicators(cycleCount);
         displayClearTime();
-
-        //            setCpuFrequencyMhz(10);
 
         state = STATE_NOTIFY_RUN;
 
@@ -201,21 +196,19 @@ void loop_main()
         break;
 
     case STATE_SLEEP:
-        //            setCpuFrequencyMhz(240);
-
         cycleCount = 0;
         startTimeMs = millis();
         displayClearScreen();
         soundNotifyShutdown();
 
-        //            setCpuFrequencyMhz(20);
+        bleResetHearthbeat();
 
         state = STATE_SLEEP_RUN;
 
         break;
 
     case STATE_SLEEP_RUN:
-        if (bleIsDesktopActive()) {
+        if (bleHasHerthbeat()) {
             state = STATE_INIT;
         }
 

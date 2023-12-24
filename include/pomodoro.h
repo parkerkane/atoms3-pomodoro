@@ -39,28 +39,20 @@
 /*************************************************************************************************/
 
 void displaySetup();
-
 void displaySetBacklight(int val);
-
 void displayDrawFullClock();
-
 void displayClearTime();
-
 void displayClearScreen();
-
 void displayDrawTime(unsigned long currentTimeMs);
-
 void displayDrawClock(unsigned long currentTimeMs);
-
 void displayDrawCycleIndicators(int cycleCount);
-
 void displayNotifyTimed(unsigned long currentTimeMs);
-
 void displayResetBacklight();
 
 /*************************************************************************************************/
 
 void bleSetup();
-bool bleIsDesktopActive();
+void bleResetHearthbeat();
+bool bleHasHerthbeat();
 
 /*************************************************************************************************/
