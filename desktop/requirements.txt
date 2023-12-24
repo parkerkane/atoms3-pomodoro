@@ -1,0 +1,4 @@
+bleak==0.21.1
+bleak-winrt==1.2.0
+mouse==0.7.1
+typing_extensions==4.9.0

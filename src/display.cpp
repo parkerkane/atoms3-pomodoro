@@ -24,7 +24,7 @@ void displaySetBacklight(int val)
     static int lastVal = -1;
 
     if (val != lastVal) {
-        printf("Set backlight: %i\r\n", val);
+//        printf("Set backlight: %i\r\n", val);
         analogWrite(DISPLAY_BL_PIN, val);
     }
 
@@ -47,6 +47,12 @@ void displayClearScreen()
 
     display->drawCircle(64, 63, 16, PINK);
     display->drawCircle(64, 63, 48, PINK);
+
+#ifdef DEV
+    display->setCursor(64-6, 0);
+    display->setFont();
+    display->print("Dev");
+#endif
 
     displayDrawFullClock();
 }

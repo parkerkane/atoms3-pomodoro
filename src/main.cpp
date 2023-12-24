@@ -13,6 +13,12 @@ enum State
     STATE_SLEEP_RUN,
 };
 
+#ifdef DEV
+#   define DEFAULT_STATE STATE_INIT
+#else
+#   define DEFAULT_STATE STATE_SLEEP
+#endif
+
 enum ButtonState
 {
     BUTTON_UP,
@@ -23,12 +29,7 @@ enum ButtonState
     BUTTON_DOWN_LONG_RUN,
 };
 
-#ifdef DEV
-volatile State state = STATE_INIT;
-#else
-volatile State state = STATE_SLEEP;
-#endif
-
+volatile State state = DEFAULT_STATE;
 volatile ButtonState buttonState;
 
 /*************************************************************************************************/
@@ -49,7 +50,7 @@ void soundNotifyTimed()
     }
 
     static unsigned long oldPos = ULONG_MAX;
-    unsigned long soundPos = currentTimeMs / 60 / mS_TO_S_FACTOR; // Every 60s
+    unsigned long soundPos = currentTimeMs / SOUND_NOTIFY_INTERVAL_S / mS_TO_S_FACTOR; // Every 60s
 
     if (soundPos != oldPos) {
         printf("Buzz.\r\n");
@@ -117,6 +118,8 @@ void setup()
 {
     printf("Hello world!\n\r");
 
+    bleSetup();
+
     pinMode(BUTTON_PIN, INPUT_PULLUP);
 
     attachInterrupt(BUTTON_PIN, buttonClickDown, FALLING);
@@ -152,7 +155,7 @@ void loop_main()
             break;
 
         case STATE_TIMER:
-            setCpuFrequencyMhz(40);
+//            setCpuFrequencyMhz(40);
             displayClearScreen();
             displayResetBacklight();
             displayDrawCycleIndicators(cycleCount);
@@ -174,7 +177,7 @@ void loop_main()
             break;
 
         case STATE_NOTIFY:
-            setCpuFrequencyMhz(240);
+//            setCpuFrequencyMhz(240);
 
             updateCycleCount();
 
@@ -183,7 +186,7 @@ void loop_main()
             displayDrawCycleIndicators(cycleCount);
             displayClearTime();
 
-            setCpuFrequencyMhz(10);
+//            setCpuFrequencyMhz(10);
 
             state = STATE_NOTIFY_RUN;
 
@@ -200,23 +203,30 @@ void loop_main()
             break;
 
         case STATE_SLEEP:
-            setCpuFrequencyMhz(240);
+//            setCpuFrequencyMhz(240);
 
             cycleCount = 0;
             startTimeMs = millis();
             displayClearScreen();
             soundNotifyShutdown();
 
-            setCpuFrequencyMhz(20);
+//            setCpuFrequencyMhz(20);
 
             state = STATE_SLEEP_RUN;
 
+            break;
+
         case STATE_SLEEP_RUN:
-            dValue = pow((cos(currentTimeMs * 3.1415 / (15 * mS_TO_S_FACTOR)) + 1.0) / 2, 4.0);
+            if(bleIsDesktopActive()) {
+                state = STATE_INIT;
+            }
+
+            dValue = cos(currentTimeMs * 3.1415 / (SLEEP_CYCLE_LENGTH_S * mS_TO_S_FACTOR));
+
             if (dValue < 0.7) {
                 dValue = 0;
             }
-            displaySetBacklight((int)(dValue * TFT_LIGHT_LOW));
+            displaySetBacklight((int) (dValue * TFT_LIGHT_LOW));
 
             delay(50);
 
