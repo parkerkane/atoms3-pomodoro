@@ -5,13 +5,11 @@ setlocal
 SET DIR=%~dp0
 SET DIR=%DIR:~0,-1%
 
-cd %DIR%
-
-if exist .env\ (
+if exist %DIR%\.env\ (
     echo Python env found
 ) else (
-    python -m venv .env
-    .env\Scripts\pip install -r requirements.txt
+    python -m venv %DIR%\.env
+    %DIR%\.env\Scripts\pip install -r %DIR%\requirements.txt
 )
 
-.env\Scripts\python main.py
+%DIR%\.env\Scripts\python %DIR%\main.py
