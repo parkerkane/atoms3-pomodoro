@@ -1,5 +1,6 @@
 import time
 import asyncio
+import threading
 
 import mouse
 from bleak import BleakScanner, BleakClient
@@ -8,7 +9,7 @@ service_uuid = "ae088d12-a31e-4d8c-8b2b-84dd292883f4"
 char_uuid = "49a380be-0591-4bb0-978b-fab6cc055f3f"
 mac_address = 'DC:54:75:D0:88:F5'
 
-mouse_move_evt = asyncio.Event()
+mouse_move_evt = threading.Event()
 
 
 # noinspection PyUnusedLocal
