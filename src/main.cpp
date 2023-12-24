@@ -201,14 +201,14 @@ void loop_main()
         displayClearScreen();
         soundNotifyShutdown();
 
-        bleResetHearthbeat();
+        bleClearHearthbeatState();
 
         state = STATE_SLEEP_RUN;
 
         break;
 
     case STATE_SLEEP_RUN:
-        if (bleHasHerthbeat()) {
+        if (bleGetHerthbeatState()) {
             state = STATE_INIT;
         }
 

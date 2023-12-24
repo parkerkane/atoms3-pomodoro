@@ -22,7 +22,7 @@
 #   define TIMER_LENGTH_MS (5 * 1 * mS_TO_S_FACTOR)
 #   define NOTIFY_TIMEOUT_MS (15 * 1 * mS_TO_S_FACTOR)
 
-#   define SOUND_NOTIFY_INTERVAL_S 5
+#   define SOUND_NOTIFY_INTERVAL_S 60
 #   define SLEEP_CYCLE_LENGTH_S 5
 
 #else
@@ -52,7 +52,7 @@ void displayResetBacklight();
 /*************************************************************************************************/
 
 void bleSetup();
-void bleResetHearthbeat();
-bool bleHasHerthbeat();
+void bleClearHearthbeatState();
+bool bleGetHerthbeatState();
 
 /*************************************************************************************************/
