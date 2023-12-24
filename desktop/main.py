@@ -65,7 +65,7 @@ async def main():
                     tg.create_task(send_heartbeat(addr))
 
             print("longer sleep")
-            await asyncio.sleep(60)
+            await asyncio.sleep(10 * 60)
             print("sleep done")
             mouse_move_evt.clear()
 

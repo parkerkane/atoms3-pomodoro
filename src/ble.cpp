@@ -5,31 +5,28 @@
 #include "pomodoro.h"
 
 #include <BLEDevice.h>
-#include <BLEUtils.h>
 #include <BLEServer.h>
+#include <BLEUtils.h>
 
-#define SERVICE_UUID        "ae088d12-a31e-4d8c-8b2b-84dd292883f4"
-#define DESTKTOP_ACTIVE_CHAR_UUID     "49a380be-0591-4bb0-978b-fab6cc055f3f"
+#define SERVICE_UUID "ae088d12-a31e-4d8c-8b2b-84dd292883f4"
+#define HEARTHBEAT_CHAR_UUID "49a380be-0591-4bb0-978b-fab6cc055f3f"
 
-BLEServer *pServer = NULL;
-unsigned long lastHeartbeatTime = -15*60*1000;
+BLEServer* pServer = NULL;
+unsigned long lastHeartbeatTime = -15 * 60 * 1000;
 
-class MyServerCallbacks : public BLEServerCallbacks
-{
-    void onConnect(BLEServer *pServer) override
+class MyServerCallbacks : public BLEServerCallbacks {
+    void onConnect(BLEServer* pServer) override
     {
         BLEDevice::startAdvertising();
     };
 
-    void onDisconnect(BLEServer *pServer) override
+    void onDisconnect(BLEServer* pServer) override
     {
     }
 };
 
-
-class DesktopActiveCallbacks : public BLECharacteristicCallbacks
-{
-    void onWrite(BLECharacteristic *pCharacteristic) override
+class HearthbeatCallbacks : public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic* pCharacteristic) override
     {
         std::string rxValue = pCharacteristic->getValue();
 
@@ -38,7 +35,6 @@ class DesktopActiveCallbacks : public BLECharacteristicCallbacks
     }
 };
 
-
 void bleSetup()
 {
     BLEDevice::init("Pomodoro Timer");
@@ -46,21 +42,20 @@ void bleSetup()
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new MyServerCallbacks());
 
-    BLEService *pService = pServer->createService(SERVICE_UUID);
+    BLEService* pService = pServer->createService(SERVICE_UUID);
 
-    BLECharacteristic *startCharacteristic = pService->createCharacteristic(
-            DESTKTOP_ACTIVE_CHAR_UUID,
-            BLECharacteristic::PROPERTY_WRITE
-    );
+    BLECharacteristic* startCharacteristic = pService->createCharacteristic(
+        HEARTHBEAT_CHAR_UUID,
+        BLECharacteristic::PROPERTY_WRITE);
 
-    startCharacteristic->setCallbacks(new DesktopActiveCallbacks());
+    startCharacteristic->setCallbacks(new HearthbeatCallbacks());
 
     pService->start();
 
-    BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+    BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(SERVICE_UUID);
     pAdvertising->setScanResponse(true);
-    pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
+    pAdvertising->setMinPreferred(0x0); // set value to 0x00 to not advertise this parameter
     BLEDevice::startAdvertising();
 }
 

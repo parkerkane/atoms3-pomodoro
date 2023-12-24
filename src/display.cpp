@@ -1,17 +1,17 @@
 #include "pomodoro.h"
 
-Arduino_DataBus *displayBus = new Arduino_ESP32SPI(
-        33 /* DC */,
-        15 /* CS */,
-        17 /* SCK */,
-        21 /* MOSI */,
-        GFX_NOT_DEFINED /* MISO */);
+Arduino_DataBus* displayBus = new Arduino_ESP32SPI(
+    33 /* DC */,
+    15 /* CS */,
+    17 /* SCK */,
+    21 /* MOSI */,
+    GFX_NOT_DEFINED /* MISO */);
 
-Arduino_GFX *display = new Arduino_GC9107(
-        displayBus,
-        34 /* RST */,
-        0 /* rotation */,
-        true /* IPS */);
+Arduino_GFX* display = new Arduino_GC9107(
+    displayBus,
+    34 /* RST */,
+    0 /* rotation */,
+    true /* IPS */);
 
 void displaySetup()
 {
@@ -24,7 +24,7 @@ void displaySetBacklight(int val)
     static int lastVal = -1;
 
     if (val != lastVal) {
-//        printf("Set backlight: %i\r\n", val);
+        //        printf("Set backlight: %i\r\n", val);
         analogWrite(DISPLAY_BL_PIN, val);
     }
 
@@ -49,7 +49,7 @@ void displayClearScreen()
     display->drawCircle(64, 63, 48, PINK);
 
 #ifdef DEV
-    display->setCursor(64-6, 0);
+    display->setCursor(64 - 6, 0);
     display->setFont();
     display->print("Dev");
 #endif
@@ -80,22 +80,22 @@ void displayDrawTime(unsigned long currentTimeMs)
 
 void displayDrawClock(unsigned long currentTimeMs)
 {
-    float progressingArcPos = 360.0f - (float) ((currentTimeMs * 360 / TIMER_LENGTH_MS) % 360);
+    float progressingArcPos = 360.0f - (float)((currentTimeMs * 360 / TIMER_LENGTH_MS) % 360);
     float timeRotatingArcPos = ARC_CENTER_POS + ((currentTimeMs * 6 / mS_TO_S_FACTOR) % 360);
 
     display->fillArc(
-            64, 64,
-            48, 16,
-            timeRotatingArcPos,
-            progressingArcPos + timeRotatingArcPos,
-            RED);
+        64, 64,
+        48, 16,
+        timeRotatingArcPos,
+        progressingArcPos + timeRotatingArcPos,
+        RED);
 
     display->fillArc(
-            64, 64,
-            48, 16,
-            progressingArcPos + timeRotatingArcPos,
-            360 + timeRotatingArcPos,
-            RGB565(64, 0, 0));
+        64, 64,
+        48, 16,
+        progressingArcPos + timeRotatingArcPos,
+        360 + timeRotatingArcPos,
+        RGB565(64, 0, 0));
 }
 
 void displayDrawCycleIndicators(int cycleCount)
