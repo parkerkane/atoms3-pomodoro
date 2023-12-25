@@ -35,58 +35,9 @@ volatile ButtonState buttonState;
 volatile int cycleCount = 0;
 volatile unsigned long startTimeMs = 0;
 
-bool soundMuted = false;
-
 unsigned long currentTimeMs;
 
-/*************************************************************************************************/
-
-void soundNotifyTimed()
-{
-    if (soundMuted) {
-        return;
-    }
-
-    static unsigned long oldPos = ULONG_MAX;
-    unsigned long soundPos = currentTimeMs / SOUND_NOTIFY_INTERVAL_S / mS_TO_S_FACTOR; // Every 60s
-
-    if (soundPos != oldPos) {
-        printf("Buzz.\r\n");
-
-        tone(BUZZ_PIN, 440, 5);
-        delay(100);
-        tone(BUZZ_PIN, 440, 5);
-
-        oldPos = soundPos;
-    }
-}
-
-void soundNotifyShort()
-{
-    tone(BUZZ_PIN, 440, 5);
-}
-
-void soundNotifyLong()
-{
-    tone(BUZZ_PIN, 440, 25);
-    delay(100);
-    tone(BUZZ_PIN, 220, 25);
-}
-
-void soundNotifyMute()
-{
-    tone(BUZZ_PIN, 1000, 50);
-}
-
-void soundNotifyShutdown()
-{
-    tone(BUZZ_PIN, 1000, 25);
-    delay(125);
-    tone(BUZZ_PIN, 500, 50);
-    delay(250);
-    tone(BUZZ_PIN, 250, 100);
-    delay(250);
-}
+bool soundMuted = false;
 
 /*************************************************************************************************/
 
@@ -116,7 +67,7 @@ void setup()
 {
     printf("Hello world!\n\r");
 
-    bleSetup();
+    ble::setup();
 
     pinMode(BUTTON_PIN, INPUT_PULLUP);
 
@@ -125,9 +76,9 @@ void setup()
     ledcChangeFrequency(analogGetChannel(DISPLAY_BL_PIN), 500, 8);
     analogWrite(DISPLAY_BL_PIN, TFT_LIGHT_LOW);
 
-    displaySetup();
-    displayClearScreen();
-    soundNotifyLong();
+    display::setup();
+    display::clearScreen();
+    sound::notifyLong();
 }
 
 /*************************************************************************************************/
@@ -153,11 +104,11 @@ void loop_main()
         break;
 
     case STATE_TIMER:
-        displayClearScreen();
-        displayResetBacklight();
-        displayDrawCycleIndicators(cycleCount);
+        display::clearScreen();
+        display::resetBacklight();
+        display::drawCycleIndicators(cycleCount);
 
-        soundNotifyShort();
+        sound::notifyShort();
 
         state = STATE_TIMER_RUN;
 
@@ -167,8 +118,8 @@ void loop_main()
             break;
         }
 
-        displayDrawTime(currentTimeMs);
-        displayDrawClock(currentTimeMs);
+        display::drawTime(currentTimeMs);
+        display::drawClock(currentTimeMs);
 
         delay(100);
         break;
@@ -176,10 +127,10 @@ void loop_main()
     case STATE_NOTIFY:
         updateCycleCount();
 
-        displayClearScreen();
-        displayDrawFullClock();
-        displayDrawCycleIndicators(cycleCount);
-        displayClearTime();
+        display::clearScreen();
+        display::drawFullClock();
+        display::drawCycleIndicators(cycleCount);
+        display::clearTime();
 
         state = STATE_NOTIFY_RUN;
 
@@ -189,8 +140,11 @@ void loop_main()
             break;
         }
 
-        displayNotifyTimed(currentTimeMs);
-        soundNotifyTimed();
+        display::notifyTimed(currentTimeMs);
+
+        if(!soundMuted) {
+            sound::notifyTimed(currentTimeMs);
+        }
 
         delay(25);
         break;
@@ -198,17 +152,17 @@ void loop_main()
     case STATE_SLEEP:
         cycleCount = 0;
         startTimeMs = millis();
-        displayClearScreen();
-        soundNotifyShutdown();
+        display::clearScreen();
+        sound::notifyShutdown();
 
-        bleClearHearthbeatState();
+        ble::clearHearthbeatState();
 
         state = STATE_SLEEP_RUN;
 
         break;
 
     case STATE_SLEEP_RUN:
-        if (bleGetHerthbeatState()) {
+        if (ble::getHerthbeatState()) {
             state = STATE_INIT;
         }
 
@@ -217,7 +171,7 @@ void loop_main()
         if (dValue < 0.7) {
             dValue = 0;
         }
-        displaySetBacklight((int)(dValue * TFT_LIGHT_LOW));
+        display::setBacklight((int)(dValue * TFT_LIGHT_LOW));
 
         delay(50);
 
@@ -257,8 +211,8 @@ void handleButtonLongClick()
     case STATE_NOTIFY:
     case STATE_NOTIFY_RUN:
         if (!soundMuted) {
-            soundNotifyMute();
-            soundMuted = true;
+            sound::notifyMute();
+            soundMuted=true;
         } else {
             state = STATE_SLEEP;
         }
@@ -284,7 +238,7 @@ void loop_button()
 
     case BUTTON_DOWN:
         buttonDownTime = millis();
-        soundNotifyShort();
+        sound::notifyShort();
 
         buttonState = BUTTON_DOWN_RUN;
 
@@ -300,7 +254,7 @@ void loop_button()
         break;
 
     case BUTTON_DOWN_LONG:
-        soundNotifyLong();
+        sound::notifyLong();
         buttonState = BUTTON_DOWN_LONG_RUN;
 
     case BUTTON_DOWN_LONG_RUN:

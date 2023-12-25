@@ -11,6 +11,8 @@
 #define SERVICE_UUID "ae088d12-a31e-4d8c-8b2b-84dd292883f4"
 #define HEARTHBEAT_CHAR_UUID "49a380be-0591-4bb0-978b-fab6cc055f3f"
 
+namespace ble {
+
 BLEServer* pServer = NULL;
 bool hearthbeatState = false;
 
@@ -35,7 +37,7 @@ class HearthbeatCallbacks : public BLECharacteristicCallbacks {
     }
 };
 
-void bleSetup()
+void setup()
 {
     BLEDevice::init("Pomodoro Timer");
 
@@ -59,12 +61,15 @@ void bleSetup()
     BLEDevice::startAdvertising();
 }
 
-void bleClearHearthbeatState() 
+void clearHearthbeatState() 
 {
     hearthbeatState = false;
 }
 
-bool bleGetHerthbeatState()
+bool getHerthbeatState()
 {
     return hearthbeatState;
+}
+
+/* namespace ble */
 }

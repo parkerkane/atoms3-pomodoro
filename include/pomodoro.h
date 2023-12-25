@@ -19,40 +19,59 @@
 
 #ifdef DEV
 
-#   define TIMER_LENGTH_MS (5 * 1 * mS_TO_S_FACTOR)
-#   define NOTIFY_TIMEOUT_MS (15 * 1 * mS_TO_S_FACTOR)
+#define TIMER_LENGTH_MS (5 * 1 * mS_TO_S_FACTOR)
+#define NOTIFY_TIMEOUT_MS (15 * 1 * mS_TO_S_FACTOR)
 
-#   define SOUND_NOTIFY_INTERVAL_S 60
-#   define SLEEP_CYCLE_LENGTH_S 5
+#define SOUND_NOTIFY_INTERVAL_S 60
+#define SLEEP_CYCLE_LENGTH_S 5
 
 #else
 
-#   define TIMER_LENGTH_MS (25 * 60 * mS_TO_S_FACTOR)
-#   define NOTIFY_TIMEOUT_MS (60 * 60 * mS_TO_S_FACTOR)
+#define TIMER_LENGTH_MS (25 * 60 * mS_TO_S_FACTOR)
+#define NOTIFY_TIMEOUT_MS (60 * 60 * mS_TO_S_FACTOR)
 
-#   define SOUND_NOTIFY_INTERVAL_S 60
-#   define SLEEP_CYCLE_LENGTH_S 15
+#define SOUND_NOTIFY_INTERVAL_S 60
+#define SLEEP_CYCLE_LENGTH_S 15
 
 #endif
 // #define SHUTDOWN_TIME_MS (45 * 60 * mS_TO_S_FACTOR)
 
 /*************************************************************************************************/
 
-void displaySetup();
-void displaySetBacklight(int val);
-void displayDrawFullClock();
-void displayClearTime();
-void displayClearScreen();
-void displayDrawTime(unsigned long currentTimeMs);
-void displayDrawClock(unsigned long currentTimeMs);
-void displayDrawCycleIndicators(int cycleCount);
-void displayNotifyTimed(unsigned long currentTimeMs);
-void displayResetBacklight();
+namespace display {
+
+void setup();
+void setBacklight(int val);
+void drawFullClock();
+void clearTime();
+void clearScreen();
+void drawTime(unsigned long currentTimeMs);
+void drawClock(unsigned long currentTimeMs);
+void drawCycleIndicators(int cycleCount);
+void notifyTimed(unsigned long currentTimeMs);
+void resetBacklight();
+
+}
 
 /*************************************************************************************************/
 
-void bleSetup();
-void bleClearHearthbeatState();
-bool bleGetHerthbeatState();
+namespace ble {
+
+void setup();
+void clearHearthbeatState();
+bool getHerthbeatState();
+
+}
+/*************************************************************************************************/
+
+namespace sound {
+
+void notifyTimed(unsigned long currentTimeMs);
+void notifyShort();
+void notifyLong();
+void notifyMute();
+void notifyShutdown();
+
+}
 
 /*************************************************************************************************/
