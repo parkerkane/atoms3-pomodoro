@@ -20,9 +20,9 @@
 #ifdef DEV
 
 #define TIMER_LENGTH_MS (5 * 1 * mS_TO_S_FACTOR)
-#define NOTIFY_TIMEOUT_MS (15 * 1 * mS_TO_S_FACTOR)
+#define NOTIFY_TIMEOUT_MS (15 * 60 * mS_TO_S_FACTOR)
 
-#define SOUND_NOTIFY_INTERVAL_S 60
+#define SOUND_NOTIFY_INTERVAL_S 10
 #define SLEEP_CYCLE_LENGTH_S 5
 
 #else
@@ -60,6 +60,7 @@ namespace ble {
 void setup();
 void clearHearthbeatState();
 bool getHerthbeatState();
+unsigned long getHerthbeatTime();
 
 }
 /*************************************************************************************************/
@@ -71,6 +72,9 @@ void notifyShort();
 void notifyLong();
 void notifyMute();
 void notifyShutdown();
+
+void resetNotifyState();
+void increaseNotifyState(); 
 
 }
 

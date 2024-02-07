@@ -15,6 +15,7 @@ namespace ble {
 
 BLEServer* pServer = NULL;
 bool hearthbeatState = false;
+volatile unsigned long lastHeartbeatTime = 0;
 
 class MyServerCallbacks : public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) override
@@ -34,6 +35,7 @@ class HearthbeatCallbacks : public BLECharacteristicCallbacks {
 
         printf("Received hearthbeat: %s\r\n", rxValue.c_str());
         hearthbeatState = true;
+        lastHeartbeatTime = millis();
     }
 };
 
@@ -69,6 +71,10 @@ void clearHearthbeatState()
 bool getHerthbeatState()
 {
     return hearthbeatState;
+}
+
+unsigned long getHerthbeatTime() {
+    return lastHeartbeatTime;
 }
 
 /* namespace ble */

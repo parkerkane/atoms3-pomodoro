@@ -112,7 +112,7 @@ void notifyTimed(unsigned long currentTimeMs)
 {
     static bool blinkState = false;
 
-    unsigned long blinkPos = (currentTimeMs * 10 / mS_TO_S_FACTOR) % (10 * 2); // Every 2s
+    unsigned long blinkPos = (currentTimeMs * 4 / mS_TO_S_FACTOR) % (2 * 1); // Every 1s
 
     if (blinkPos == 0 && !blinkState) {
         printf("Blink.\r\n");
