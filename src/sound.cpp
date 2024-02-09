@@ -13,7 +13,7 @@ void notifyTimed(unsigned long currentTimeMs)
         printf("Buzz.\r\n");
 
         unsigned int hbTime = millis() - ble::getHerthbeatTime();
-        if (hbTime > 60 * mS_TO_S_FACTOR) {
+        if (hbTime > 45 * mS_TO_S_FACTOR) {
             resetNotifyState();
         } else {
             increaseNotifyState();
@@ -24,10 +24,10 @@ void notifyTimed(unsigned long currentTimeMs)
         tone(BUZZ_PIN, 440, 5);
         delay(100);
 
-        int c = max(0, notifyState-5);
-        c=min(128, c*c);
+        int c = max(0, notifyState /*-5*/);
+        c = min(128, c * c);
 
-        for(int i=1; i < c; i++) {
+        for (int i = 1; i < c; i++) {
             tone(BUZZ_PIN, 440, 15);
             tone(BUZZ_PIN, 880, 25);
             delay(100);
@@ -67,11 +67,13 @@ void notifyShutdown()
     delay(250);
 }
 
-void resetNotifyState() {
+void resetNotifyState()
+{
     notifyState = 1;
 }
 
-void increaseNotifyState() {
+void increaseNotifyState()
+{
     notifyState++;
 }
 

@@ -131,6 +131,7 @@ void loop_main()
         display::drawFullClock();
         display::drawCycleIndicators(cycleCount);
         display::clearTime();
+        sound::resetNotifyState();
 
         state = STATE_NOTIFY_RUN;
 
@@ -142,7 +143,7 @@ void loop_main()
 
         display::notifyTimed(currentTimeMs);
 
-        if(!soundMuted) {
+        if (!soundMuted) {
             sound::notifyTimed(currentTimeMs);
         }
 
@@ -212,7 +213,7 @@ void handleButtonLongClick()
     case STATE_NOTIFY_RUN:
         if (!soundMuted) {
             sound::notifyMute();
-            soundMuted=true;
+            soundMuted = true;
         } else {
             state = STATE_SLEEP;
         }

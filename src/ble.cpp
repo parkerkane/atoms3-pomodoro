@@ -63,7 +63,7 @@ void setup()
     BLEDevice::startAdvertising();
 }
 
-void clearHearthbeatState() 
+void clearHearthbeatState()
 {
     hearthbeatState = false;
 }
@@ -73,7 +73,8 @@ bool getHerthbeatState()
     return hearthbeatState;
 }
 
-unsigned long getHerthbeatTime() {
+unsigned long getHerthbeatTime()
+{
     return lastHeartbeatTime;
 }
 

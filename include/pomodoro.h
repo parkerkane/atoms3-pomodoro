@@ -74,7 +74,7 @@ void notifyMute();
 void notifyShutdown();
 
 void resetNotifyState();
-void increaseNotifyState(); 
+void increaseNotifyState();
 
 }
 
