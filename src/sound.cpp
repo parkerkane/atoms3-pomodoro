@@ -13,27 +13,34 @@ void notifyTimed(unsigned long currentTimeMs)
         printf("Buzz.\r\n");
 
         unsigned int hbTime = millis() - ble::getHerthbeatTime();
-        if (hbTime > 45 * mS_TO_S_FACTOR) {
+        unsigned int prTime = millis() - presence::getPresenceTime();
+
+        unsigned int minTime = min(hbTime, prTime);
+
+        if (minTime > (10) * mS_TO_S_FACTOR) {
             resetNotifyState();
         } else {
             increaseNotifyState();
         }
 
-        tone(BUZZ_PIN, 440, 5);
-        delay(100);
-        tone(BUZZ_PIN, 440, 5);
-        delay(100);
+        int aggressiveNotificationCount = min(512, (int)pow(1.5f, (float)max(0, notifyState - 1)));
 
-        int c = max(0, notifyState /*-5*/);
-        c = min(128, c * c);
+        if (aggressiveNotificationCount <= 1) {
+            tone(BUZZ_PIN, 440, 5);
+            delay(100);
+            tone(BUZZ_PIN, 440, 5);
+            delay(100);
 
-        for (int i = 1; i < c; i++) {
-            tone(BUZZ_PIN, 440, 15);
-            tone(BUZZ_PIN, 880, 25);
-            delay(100);
-            tone(BUZZ_PIN, 440, 15);
-            delay(100);
+        } else {
+            for (int i = 0; i < aggressiveNotificationCount; i++) {
+                tone(BUZZ_PIN, 440, 15);
+                tone(BUZZ_PIN, 880, 25);
+                delay(50);
+                tone(BUZZ_PIN, 440, 15);
+                delay(50);
+            }
         }
+
         // tone(BUZZ_PIN, 440, 5 * (1+notifyState));
 
         oldPos = soundPos;
@@ -65,6 +72,14 @@ void notifyShutdown()
     delay(250);
     tone(BUZZ_PIN, 250, 100);
     delay(250);
+}
+
+void notifyDenied() 
+{
+    tone(BUZZ_PIN, 220, 200);
+    delay(250);
+    tone(BUZZ_PIN, 110, 500);
+    delay(500);
 }
 
 void resetNotifyState()

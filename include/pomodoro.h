@@ -72,9 +72,27 @@ void notifyShort();
 void notifyLong();
 void notifyMute();
 void notifyShutdown();
+void notifyDenied(); 
 
 void resetNotifyState();
 void increaseNotifyState();
+
+}
+
+/*************************************************************************************************/
+
+namespace presence {
+
+void setup();
+void update();
+
+void clearState();
+bool getState();
+
+void clearMovedState();
+bool getMovedState();
+
+unsigned long getPresenceTime();
 
 }
 

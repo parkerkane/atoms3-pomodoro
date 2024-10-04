@@ -27,8 +27,16 @@ enum ButtonState {
     BUTTON_DOWN_LONG_RUN,
 };
 
+enum PresenceState {
+    PRESENCE_SETUP,
+    PRESENCE_UPDATE,
+    PRESENCE_SLEEP,
+};
+
 volatile State state = DEFAULT_STATE;
 volatile ButtonState buttonState;
+volatile PresenceState presenceState;
+
 
 /*************************************************************************************************/
 
@@ -67,7 +75,7 @@ void setup()
 {
     printf("Hello world!\n\r");
 
-    ble::setup();
+    // ble::setup();
 
     pinMode(BUTTON_PIN, INPUT_PULLUP);
 
@@ -75,6 +83,8 @@ void setup()
 
     ledcChangeFrequency(analogGetChannel(DISPLAY_BL_PIN), 500, 8);
     analogWrite(DISPLAY_BL_PIN, TFT_LIGHT_LOW);
+
+    presence::setup();
 
     display::setup();
     display::clearScreen();
@@ -132,6 +142,7 @@ void loop_main()
         display::drawCycleIndicators(cycleCount);
         display::clearTime();
         sound::resetNotifyState();
+        presence::clearMovedState();
 
         state = STATE_NOTIFY_RUN;
 
@@ -156,14 +167,16 @@ void loop_main()
         display::clearScreen();
         sound::notifyShutdown();
 
-        ble::clearHearthbeatState();
+        // ble::clearHearthbeatState();
+        presence::clearState();
 
         state = STATE_SLEEP_RUN;
 
         break;
 
     case STATE_SLEEP_RUN:
-        if (ble::getHerthbeatState()) {
+        // if (ble::getHerthbeatState() || presence::getState()) {
+        if (presence::getState()) {
             state = STATE_INIT;
         }
 
@@ -196,6 +209,13 @@ void handleButtonClick()
 
     case STATE_NOTIFY:
     case STATE_NOTIFY_RUN:
+
+        if (!presence::getMovedState()) {
+            printf("User not moved away!\n\r");
+            sound::notifyDenied();
+            break;
+        }
+
     case STATE_SLEEP:
     case STATE_SLEEP_RUN:
         state = STATE_INIT;
@@ -274,8 +294,51 @@ void loop_button()
 
 /*************************************************************************************************/
 
+
+void loop_presence()
+{
+    static unsigned long time;
+
+    static bool lastMoved = false;
+
+    switch (presenceState) {
+        case PRESENCE_SETUP:
+            presence::clearMovedState();
+            presenceState = PRESENCE_SLEEP;
+            break;
+
+        case PRESENCE_UPDATE:
+            presence::update();
+
+            time = millis();
+            presenceState = PRESENCE_SLEEP;
+
+            if (lastMoved == false && presence::getMovedState()) {
+                printf("User moved\n\r");
+                sound::notifyLong();
+                sound::notifyLong();
+                sound::notifyLong();
+                sound::notifyDenied();
+
+            }
+
+            lastMoved = presence::getMovedState();
+
+            break;
+
+        case PRESENCE_SLEEP:
+            if (millis() - time > 5000) {
+                presenceState = PRESENCE_UPDATE;
+            }
+            break;
+    }
+}
+
+/*************************************************************************************************/
+
 void loop()
 {
+    loop_presence();
     loop_button();
     loop_main();
 }

@@ -47,8 +47,8 @@ void clearScreen()
 {
     display->fillScreen(BG_COLOR);
 
-    display->drawCircle(64, 63, 16, PINK);
-    display->drawCircle(64, 63, 48, PINK);
+    display->drawCircle(64, 63, 16, MAROON);
+    display->drawCircle(64, 63, 48, MAROON);
 
 #ifdef DEV
     display->setCursor(64 - 6, 0);
@@ -113,6 +113,12 @@ void notifyTimed(unsigned long currentTimeMs)
     static bool blinkState = false;
 
     unsigned long blinkPos = (currentTimeMs * 4 / mS_TO_S_FACTOR) % (2 * 1); // Every 1s
+
+    if (presence::getMovedState()) {
+        setBacklight(TFT_LIGHT_HIGH);
+
+        return;
+    }
 
     if (blinkPos == 0 && !blinkState) {
         printf("Blink.\r\n");
